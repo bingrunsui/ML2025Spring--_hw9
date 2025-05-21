@@ -1,11 +1,11 @@
-# PEFT Docker images
+# PEFT Docker 镜像
 
-Here we store all PEFT Docker images used in our testing infrastructure. We use python 3.8 for now on all our images.
+这里存放了我们测试基础设施中使用的所有 PEFT Docker 镜像。目前我们所有镜像均使用 Python 3.8。
 
-- `peft-cpu`: PEFT compiled on CPU with all other HF libraries installed on main branch
-- `peft-gpu`: PEFT complied for NVIDIA GPUs wih all other HF libraries installed on main branch
-- `peft-gpu-bnb-source`: PEFT complied for NVIDIA GPUs with `bitsandbytes` and all other HF libraries installed from main branch
-- `peft-gpu-bnb-latest`: PEFT complied for NVIDIA GPUs with `bitsandbytes` complied from main and all other HF libraries installed from latest PyPi
-- `peft-gpu-bnb-multi-source`: PEFT complied for NVIDIA GPUs with `bitsandbytes` complied from `multi-backend` branch and all other HF libraries installed from main branch
+- `peft-cpu`：在 CPU 上编译的 PEFT，并安装了主分支上的所有其他 HF 库
+- `peft-gpu`：为 NVIDIA GPU 编译的 PEFT，并安装了主分支上的所有其他 HF 库
+- `peft-gpu-bnb-source`：为 NVIDIA GPU 编译的 PEFT，`bitsandbytes` 及所有其他 HF 库均从主分支安装
+- `peft-gpu-bnb-latest`：为 NVIDIA GPU 编译的 PEFT，`bitsandbytes` 从主分支编译，所有其他 HF 库从最新的 PyPi 安装
+- `peft-gpu-bnb-multi-source`：为 NVIDIA GPU 编译的 PEFT，`bitsandbytes` 从 `multi-backend` 分支编译，所有其他 HF 库从主分支安装
 
-`peft-gpu-bnb-source` and `peft-gpu-bnb-multi-source` are essentially the same, with the only difference being `bitsandbytes` compiled on another branch. Make sure to propagate the changes you applied on one file to the other!
+`peft-gpu-bnb-source` 和 `peft-gpu-bnb-multi-source` 本质上是一样的，唯一的区别是 `bitsandbytes` 编译自不同的分支。请确保你在其中一个文件上做的更改也同步到另一个文件！

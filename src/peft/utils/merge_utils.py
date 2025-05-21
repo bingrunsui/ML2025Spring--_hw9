@@ -258,54 +258,89 @@ def sce(
     ## Normalize the merged tensor by the sum of weights at each parameter position. Use clamp(min=1e-6) to avoid division by zero when all weights are erased.
 
     return
-    
+"""
+import traceback
+# ...existing code...
+
+def sce(
+    task_tensors: List[torch.Tensor],
+    density: float = 1.0,
+    majority_sign_method: Literal["total", "frequency"] = "total",
+) -> torch.Tensor:
+    try:
+        print("[sce] 输入 task_tensors 数量:", len(task_tensors))
+        task_tensors = torch.stack(task_tensors, dim=0)
+        print("[sce] 堆叠后 shape:", task_tensors.shape)
+
+        if density < 1:
+            print("[sce] 执行稀疏化, density:", density)
+            mask = sce_mask(task_tensors, density)
+            print("[sce] mask shape:", mask.shape)
+            task_tensors = task_tensors * mask.unsqueeze(0)
+
+        print("[sce] 计算符号共识掩码")
+        erase_mask = calculate_majority_sign_mask(task_tensors, method=majority_sign_method)
+        print("[sce] erase_mask shape:", erase_mask.shape)
+
+        print("[sce] 计算权重")
+        tv_weights = sce_weight(task_tensors)
+        print("[sce] tv_weights shape:", tv_weights.shape)
+        while tv_weights.dim() < task_tensors.dim():
+            tv_weights = tv_weights.unsqueeze(-1)
+
+        erased_weights = tv_weights * erase_mask
+        print("[sce] erased_weights shape:", erased_weights.shape)
+        merged_tv = (task_tensors * erased_weights).sum(dim=0)
+        final_tv = merged_tv / torch.sum(erased_weights, dim=0).clamp(min=1e-6)
+        print("[sce] 合并完成, final_tv shape:", final_tv.shape)
+        return final_tv
+    except Exception as e:
+        print("[sce] 运行出错:", e)
+        traceback.print_exc()
+        raise
+
 def sce_weight(task_tensors: torch.Tensor) -> torch.Tensor:
-	# Implementation of C step
-    
-    # Compute squared magnitude (energy) per task
-    weights = torch.mean(task_tensors**2, dim=list(range(1, task_tensors.dim())))
-	
-    # Sum all weights to normalize
-    weight_sum = torch.sum(weights).item()
-    
-    # Handle edge case: if all task tensors are 0, fallback to uniform weights
-    if abs(weight_sum) < 1e-6:
-        return torch.ones_like(weights) / weights.shape[0]
-	
-    # Normalize to form a probability distribution over tasks
-    return weights / weight_sum
+    try:
+        print("[sce_weight] 输入 shape:", task_tensors.shape)
+        weights = torch.mean(task_tensors**2, dim=list(range(1, task_tensors.dim())))
+        weight_sum = torch.sum(weights).item()
+        print("[sce_weight] weights shape:", weights.shape, "sum:", weight_sum)
+        if abs(weight_sum) < 1e-6:
+            print("[sce_weight] 所有权重为0，返回均匀权重")
+            return torch.ones_like(weights) / weights.shape[0]
+        return weights / weight_sum
+    except Exception as e:
+        print("[sce_weight] 运行出错:", e)
+        traceback.print_exc()
+        raise
 
 def sce_mask(task_tensors: torch.Tensor, density: float, mask_dtype: Optional[torch.dtype] = None):
-    # Implementation of S step (sce_mask)
-    
-    # If density is zero, mask out everything 
-    if density <= 0:
-        return torch.zeros_like(task_tensors, dtype=mask_dtype)
-    
-    # If density is one, keep everything
-    if density >= 1:
-        return torch.ones_like(task_tensors, dtype=mask_dtype)
-    
-    # Compute variance over the task dimension for each parameter
-    var = torch.var(task_tensors, dim=0, unbiased=False)
-    
-    # Count how many parameters have non-zero variance
-    nonzero = torch.count_nonzero(var)
-    
-    # Compute number of parameters to keep based on density
-    k = int(nonzero * density)
-    if k == 0:
-        return torch.zeros_like(task_tensors, dtype=mask_dtype)
-    
-    # Select the indices of top-k variances
-    _, indices = torch.topk(var.abs().view(-1), k=k, largest=True)
-    
-    # Build binary mask with 1s in selected indices 
-    mask = torch.zeros_like(var, dtype=mask_dtype)
-    mask.view(-1)[indices] = 1
-    return mask
+    try:
+        print("[sce_mask] 输入 shape:", task_tensors.shape, "density:", density)
+        if density <= 0:
+            print("[sce_mask] density<=0, 全零mask")
+            return torch.zeros_like(task_tensors, dtype=mask_dtype)
+        if density >= 1:
+            print("[sce_mask] density>=1, 全一mask")
+            return torch.ones_like(task_tensors, dtype=mask_dtype)
+        var = torch.var(task_tensors, dim=0, unbiased=False)
+        nonzero = torch.count_nonzero(var)
+        print("[sce_mask] 非零方差参数数量:", nonzero.item())
+        k = int(nonzero * density)
+        print("[sce_mask] top-k数量:", k)
+        if k == 0:
+            print("[sce_mask] k==0, 全零mask")
+            return torch.zeros_like(task_tensors, dtype=mask_dtype)
+        _, indices = torch.topk(var.abs().view(-1), k=k, largest=True)
+        mask = torch.zeros_like(var, dtype=mask_dtype)
+        mask.view(-1)[indices] = 1
+        print("[sce_mask] mask shape:", mask.shape)
+        return mask
+    except Exception as e:
+        print("[sce_mask] 运行出错:", e)
+        traceback.print_exc()
+        raise
 
-"""
 
 
 def dare_linear(task_tensors: List[torch.Tensor], weights: torch.Tensor, density: float) -> torch.Tensor:
